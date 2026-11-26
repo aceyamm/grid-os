@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { AgentControl } from "../components/AgentControl";
 import { GridHeader } from "../components/GridHeader";
 import { NodeTelemetry } from "../components/NodeTelemetry";
@@ -32,6 +32,38 @@ const NAV_ITEMS: { id: Workspace; label: string; mark: string }[] = [
   { id: "continuum", label: "Continuum", mark: "07" },
   { id: "simulation", label: "Simulation Bank", mark: "08" },
 ];
+
+const NAV_TOUR_DESCRIPTIONS: Record<Workspace, string> = {
+  overview: "Review the selected case, current operating indicators, and nine-stage process position.",
+  assets: "Inspect substation and feeder ratings, reported telemetry, and imported field observations.",
+  scenarios: "Open isolated drill cases to rehearse review workflows using synthetic conditions.",
+  agents: "Run timed or manual process-agent playback. The agent pauses at SIGNAL for dispatcher review.",
+  scan: "Review active anomalies and the evidence attached to each simulated finding.",
+  review: "Inspect the recommendation and record an operator ACCEPT, REJECT, or HOLD decision.",
+  continuum: "Review the chronological case record and export its event trace.",
+  simulation: "Run a synthetic stability preview and inspect its clearly labeled sample percentiles.",
+};
+
+const PRACTICE_STEPS: { stage: GridState; explanation: string }[] = [
+  { stage: "SCAN", explanation: "Establish the operating baseline. Confirm the selected substation, feeder readings, and freshness of available evidence." },
+  { stage: "FAULT", explanation: "Validate the reported fault against the seeded observation. Unverified evidence must remain visible as uncertain." },
+  { stage: "LOAD_CAP", explanation: "Review effective thermal capacity, load delta, reserves, and the VEIL concurrent-switching boundary." },
+  { stage: "ISLAND", explanation: "Identify a candidate isolation boundary in the simulation. No breaker instruction is issued." },
+  { stage: "SEQUENCE", explanation: "Review the simulated restoration sequence and its dependencies before advancing." },
+  { stage: "RESERVE", explanation: "Check spinning reserve and battery headroom before the system prepares a recommendation." },
+  { stage: "SIGNAL", explanation: "Review projected frequency, MW delta, and invalidation conditions. This practice signal still requires a dispatcher decision." },
+  { stage: "AUTHORIZE", explanation: "Acknowledge the recommendation in this temporary drill. This records a simulated decision only." },
+  { stage: "SFAE", explanation: "Close the simulated review and record the after-action state in the temporary Continuum trace." },
+];
+
+type TourKind = "guided" | "agent" | "practice";
+
+interface WorkspaceTour {
+  kind: TourKind;
+  step: number;
+  playing: boolean;
+  delay: number;
+}
 
 const STAGE_ORDER: GridState[] = [...GRID_STATE_SEQUENCE];
 
@@ -294,7 +326,12 @@ const SignalReview: React.FC<{
   );
 };
 
-export const OverviewPage: React.FC<{ onOpenGuide: () => void }> = ({ onOpenGuide }) => {
+export const OverviewPage: React.FC<{
+  onOpenGuide: () => void;
+  onSwitchWorkspace: () => void;
+}> = ({ onOpenGuide, onSwitchWorkspace }) => {
+  const routeQuery = new URLSearchParams(window.location.search);
+  const initialTour = routeQuery.get("tour");
   const {
     activeCase,
     cases,
@@ -309,10 +346,18 @@ export const OverviewPage: React.FC<{ onOpenGuide: () => void }> = ({ onOpenGuid
   const [decisionNote, setDecisionNote] = useState("");
   const [notice, setNotice] = useState("");
   const [simulation, setSimulation] = useState<ReturnType<typeof createSimulationSummary> | null>(null);
+  const [tour, setTour] = useState<WorkspaceTour | null>(() =>
+    initialTour === "agent" || initialTour === "practice"
+      ? {
+          kind: initialTour,
+          step: 0,
+          playing: initialTour === "agent",
+          delay: 2200,
+        }
+      : null
+  );
 
-  const demoMode =
-    typeof window !== "undefined" &&
-    new URLSearchParams(window.location.search).get("demo") === "true";
+  const demoMode = routeQuery.get("demo") === "true";
   const activeSignal = activeCase?.signals.find(
     (signal) => signal.status === "PENDING_DISPATCHER"
   );
@@ -330,14 +375,191 @@ export const OverviewPage: React.FC<{ onOpenGuide: () => void }> = ({ onOpenGuid
   }, [activeCase]);
   const title = NAV_ITEMS.find((item) => item.id === workspace)?.label ?? "Overview";
 
-  if (!activeCase) {
-    return <main className="app-loading">Preparing the seeded simulation workspace…</main>;
-  }
-
   const showMessage = (message: string) => {
     setNotice(message);
     window.setTimeout(() => setNotice(""), 5000);
   };
+
+  const launchTemporaryTour = (kind: "agent" | "practice") => {
+    const query = new URLSearchParams({
+      demo: "true",
+      enter: "true",
+      tour: kind,
+    });
+    window.location.assign(`${window.location.pathname}?${query.toString()}`);
+  };
+
+  const closeTour = () => {
+    setTour(null);
+    const query = new URLSearchParams(window.location.search);
+    query.delete("enter");
+    query.delete("tour");
+    const suffix = query.toString();
+    window.history.replaceState(
+      null,
+      "",
+      `${window.location.pathname}${suffix ? `?${suffix}` : ""}`
+    );
+  };
+
+  const goToTourStep = (step: number) => {
+    if (step < 0 || step >= NAV_ITEMS.length) return;
+    setWorkspace(NAV_ITEMS[step].id);
+    setTour((current) => current ? { ...current, step } : current);
+  };
+
+  const startGuidedTour = () => {
+    setWorkspace(NAV_ITEMS[0].id);
+    setTour({ kind: "guided", step: 0, playing: false, delay: 2200 });
+  };
+
+  const startAgentDemoTour = () => launchTemporaryTour("agent");
+
+  const startPracticeTour = () => launchTemporaryTour("practice");
+
+  const selectWorkspace = (nextWorkspace: Workspace) => {
+    setWorkspace(nextWorkspace);
+    if (tour && (tour.kind === "guided" || tour.kind === "agent")) {
+      const step = NAV_ITEMS.findIndex((item) => item.id === nextWorkspace);
+      if (step >= 0) setTour({ ...tour, step });
+    }
+  };
+
+  const toggleAgentTour = () => {
+    if (!tour || tour.kind !== "agent") return;
+    if (!tour.playing && tour.step === NAV_ITEMS.length - 1) {
+      setWorkspace(NAV_ITEMS[0].id);
+      setTour({ ...tour, step: 0, playing: true });
+      return;
+    }
+    setTour({ ...tour, playing: !tour.playing });
+  };
+
+  useEffect(() => {
+    if (tour?.kind !== "agent" || !tour.playing) return undefined;
+    const timer = window.setTimeout(() => {
+      const nextStep = tour.step + 1;
+      if (nextStep >= NAV_ITEMS.length) {
+        setTour((current) =>
+          current?.kind === "agent" ? { ...current, playing: false } : current
+        );
+        return;
+      }
+
+      setWorkspace(NAV_ITEMS[nextStep].id);
+      setTour((current) =>
+        current?.kind === "agent" ? { ...current, step: nextStep } : current
+      );
+    }, tour.delay);
+
+    return () => window.clearTimeout(timer);
+  }, [tour]);
+
+  const practiceStep = tour?.kind === "practice" ? PRACTICE_STEPS[tour.step] : null;
+
+  const advancePracticeTour = () => {
+    if (!activeCase || tour?.kind !== "practice" || tour.step === 6) return;
+    if (tour.step >= PRACTICE_STEPS.length - 1) {
+      closeTour();
+      return;
+    }
+
+    const nextPracticeStep = PRACTICE_STEPS[tour.step + 1];
+    const advanced = updateNodeState(
+      activeCase.caseId,
+      nextPracticeStep.stage,
+      `Practice tour review: ${nextPracticeStep.explanation}`
+    );
+    if (!advanced) {
+      showMessage("Practice stage could not advance. Restart the temporary practice tour to reset the drill.");
+      return;
+    }
+    setTour({ ...tour, step: tour.step + 1 });
+  };
+
+  const acceptPracticeSignal = () => {
+    if (!activeCase || tour?.kind !== "practice") return;
+    const pendingSignal = activeCase.signals.find(
+      (signal) => signal.status === "PENDING_DISPATCHER"
+    );
+    if (!pendingSignal) {
+      showMessage("The practice recommendation is not available. Restart the temporary practice tour.");
+      return;
+    }
+
+    const accepted = authorizeSignal(
+      activeCase.caseId,
+      pendingSignal.signalId,
+      "ACCEPT",
+      "Accepted for practice tour only; no equipment action."
+    );
+    if (!accepted) {
+      showMessage("Practice decision was not recorded. The recommendation remains at the human review gate.");
+      return;
+    }
+    setTour({ ...tour, step: tour.step + 1 });
+  };
+
+  useEffect(() => {
+    if (activeCase || !tour || tour.kind !== "practice") return;
+    closeTour();
+  }, [activeCase, tour]);
+
+  if (!activeCase) {
+    const createFreshPracticeCase = () => {
+      createCase("North District", "DRILL", DEMO_GRID_NODES[0]);
+    };
+
+    return (
+      <div className="app-shell">
+        <aside className="sidebar fresh-sidebar">
+          <div className="brand">
+            <span className="brand-mark">黒神</span>
+            <span className="brand-copy"><strong>GRID OS</strong><small>EMPTY WORKSPACE</small></span>
+          </div>
+          <div className="sidebar-section-label">NO CASES LOADED</div>
+          <div className="fresh-sidebar-note">
+            This workspace is empty. Create a practice case to begin.
+          </div>
+          <div className="sidebar-bottom">
+            <button className="session-switch-button" onClick={onSwitchWorkspace}>
+              Workspace options
+            </button>
+          </div>
+        </aside>
+        <div className="workspace">
+          <GridHeader
+            caseType="SIMULATION"
+            workspaceTitle="EMPTY WORKSPACE"
+            processXp={0}
+            onGuide={onOpenGuide}
+            onSwitchWorkspace={onSwitchWorkspace}
+            killSwitch={killSwitch}
+            onKillSwitch={() => setKillSwitch((enabled) => !enabled)}
+          />
+          <main className="main-content">
+            <section className="empty-workspace-panel panel">
+              <div className="eyebrow">FRESH SESSION / ZERO CASES</div>
+              <h1>Start with a clean workspace.</h1>
+              <p>
+                No saved cases were loaded. This prototype is not connected to
+                live grid equipment. Create a clearly labeled DRILL case when
+                you are ready to practice.
+              </p>
+              <div className="empty-workspace-actions">
+                <button className="button button-primary" onClick={createFreshPracticeCase}>
+                  Create practice case
+                </button>
+                <button className="button button-secondary" onClick={onSwitchWorkspace}>
+                  Workspace options
+                </button>
+              </div>
+            </section>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   const handleStageAdvance = () => {
     if (!nextStage || !stageNote.trim()) return;
@@ -476,6 +698,7 @@ export const OverviewPage: React.FC<{ onOpenGuide: () => void }> = ({ onOpenGuid
         <StateTrack
           currentState={activeCase.currentNode.currentState}
           completedStates={activeCase.currentNode.completedStates}
+          highlightedStage={practiceStep?.stage}
         />
         <div className="stage-footer">
           <div>
@@ -734,6 +957,11 @@ export const OverviewPage: React.FC<{ onOpenGuide: () => void }> = ({ onOpenGuid
     simulation: renderSimulation,
   };
 
+  const tourTab =
+    tour && (tour.kind === "guided" || tour.kind === "agent")
+      ? NAV_ITEMS[tour.step]
+      : null;
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -746,8 +974,10 @@ export const OverviewPage: React.FC<{ onOpenGuide: () => void }> = ({ onOpenGuid
           {NAV_ITEMS.map((item) => (
             <button
               key={item.id}
-              className={`nav-item ${workspace === item.id ? "nav-item-active" : ""}`}
-              onClick={() => setWorkspace(item.id)}
+              className={`nav-item ${workspace === item.id ? "nav-item-active" : ""} ${
+                tourTab?.id === item.id ? "nav-item-tour-highlight" : ""
+              }`}
+              onClick={() => selectWorkspace(item.id)}
               aria-current={workspace === item.id ? "page" : undefined}
             >
               <span className="nav-mark">{item.mark}</span>
@@ -756,6 +986,17 @@ export const OverviewPage: React.FC<{ onOpenGuide: () => void }> = ({ onOpenGuid
             </button>
           ))}
         </nav>
+        <section className="sidebar-training" aria-label="Tours and practice">
+          <div className="sidebar-training-label">TOURS &amp; PRACTICE</div>
+          <button
+            className={tour?.kind === "guided" ? "sidebar-training-active" : ""}
+            onClick={startGuidedTour}
+          >
+            Guided tab tour
+          </button>
+          <button onClick={startAgentDemoTour}>Timed demo agent</button>
+          <button onClick={startPracticeTour}>Practice the process</button>
+        </section>
         <div className="sidebar-bottom">
           <div className="operator-avatar">O</div>
           <div className="operator-copy">
@@ -777,6 +1018,7 @@ export const OverviewPage: React.FC<{ onOpenGuide: () => void }> = ({ onOpenGuid
           workspaceTitle={title.toUpperCase()}
           processXp={505 + activeCase.currentNode.completedStates.length * 25}
           onGuide={onOpenGuide}
+          onSwitchWorkspace={onSwitchWorkspace}
           killSwitch={killSwitch}
           onKillSwitch={() => setKillSwitch((enabled) => !enabled)}
         />
@@ -789,7 +1031,110 @@ export const OverviewPage: React.FC<{ onOpenGuide: () => void }> = ({ onOpenGuid
               <button onClick={() => setKillSwitch(false)}>Clear hold</button>
             </div>
           )}
-          {demoMode && <div className="demo-strip">PUBLIC PREVIEW · SEEDED DATA · NOT CONNECTED TO LIVE TELEMETRY</div>}
+          {demoMode && (
+            <div className="demo-strip">
+              <span>PUBLIC PREVIEW · TEMPORARY DATA · NOT CONNECTED TO LIVE TELEMETRY</span>
+              <button onClick={onSwitchWorkspace}>Workspace options</button>
+            </div>
+          )}
+          {tour && (
+            <section className="tour-coach" aria-live="polite">
+              <div className="tour-coach-header">
+                <span className="eyebrow">
+                  {tour.kind === "guided"
+                    ? `GUIDED TAB TOUR · ${String(tour.step + 1).padStart(2, "0")} / ${NAV_ITEMS.length}`
+                    : tour.kind === "agent"
+                      ? `DEMO AGENT RUN · ${String(tour.step + 1).padStart(2, "0")} / ${NAV_ITEMS.length}`
+                      : `PRACTICE TOUR · STAGE ${String(tour.step + 1).padStart(2, "0")} / ${PRACTICE_STEPS.length}`}
+                </span>
+                <button className="text-button" onClick={closeTour}>EXIT TOUR ×</button>
+              </div>
+              <h2>
+                {tourTab
+                  ? tourTab.label
+                  : practiceStep?.stage ?? "Practice complete"}
+              </h2>
+              <p>
+                {tourTab
+                  ? NAV_TOUR_DESCRIPTIONS[tourTab.id]
+                  : practiceStep?.explanation ??
+                    "The temporary drill reached SFAE. Its practice events are not saved to your live workspace."}
+              </p>
+              {tour.kind === "practice" ? (
+                <div className="tour-coach-footer">
+                  <span>CASE {activeCase.caseId} · DRILL · TEMPORARY</span>
+                  {tour.step === 6 ? (
+                    <button
+                      className="button button-primary"
+                      disabled={!activeSignal || killSwitch}
+                      onClick={acceptPracticeSignal}
+                    >
+                      ACCEPT PRACTICE SIGNAL
+                    </button>
+                  ) : tour.step === PRACTICE_STEPS.length - 1 ? (
+                    <button className="button button-secondary" onClick={closeTour}>
+                      FINISH PRACTICE TOUR
+                    </button>
+                  ) : (
+                    <button
+                      className="button button-primary"
+                      disabled={killSwitch}
+                      onClick={advancePracticeTour}
+                    >
+                      CONTINUE TO {PRACTICE_STEPS[tour.step + 1]?.stage}
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <>
+                  {tour.kind === "agent" && (
+                    <label className="agent-tour-timing">
+                      <span>TIME PER TAB</span>
+                      <input
+                        aria-label="Time per tab"
+                        type="range"
+                        min="1000"
+                        max="5000"
+                        step="250"
+                        value={tour.delay}
+                        onChange={(event) =>
+                          setTour({ ...tour, delay: Number(event.target.value) })
+                        }
+                      />
+                      <output>{(tour.delay / 1000).toFixed(2)} s</output>
+                    </label>
+                  )}
+                  <div className="tour-coach-footer">
+                    <span>{tour.kind === "agent" ? "TEMPORARY · NO CASE DATA CHANGED" : "READ-ONLY WORKSPACE WALKTHROUGH"}</span>
+                    <div className="tour-coach-actions">
+                      <button
+                        className="button button-secondary"
+                        disabled={tour.step === 0}
+                        onClick={() => goToTourStep(tour.step - 1)}
+                      >
+                        ← PREVIOUS
+                      </button>
+                      {tour.kind === "agent" && (
+                        <button className="button button-secondary" onClick={toggleAgentTour}>
+                          {tour.playing ? "Ⅱ PAUSE" : tour.step === NAV_ITEMS.length - 1 ? "↻ REPLAY" : "▷ RESUME"}
+                        </button>
+                      )}
+                      <button
+                        className="button button-primary"
+                        onClick={() =>
+                          tour.step === NAV_ITEMS.length - 1
+                            ? closeTour()
+                            : goToTourStep(tour.step + 1)
+                        }
+                      >
+                        {tour.step === NAV_ITEMS.length - 1 ? "FINISH TOUR" : "NEXT TAB →"}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </section>
+          )}
           {workspaceContent[workspace]()}
         </main>
       </div>

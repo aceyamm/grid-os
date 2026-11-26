@@ -14,9 +14,20 @@ import {
   GridState,
 } from "../types/grid-os";
 
+export const GRID_OS_STORAGE_KEY = "grid-os-workspace-v1";
+export const GRID_OS_SESSION_MODE_KEY = "grid-os-session-mode-v1";
+
 const isTemporaryDemoMode = (): boolean =>
   typeof window === "undefined" ||
   new URLSearchParams(window.location.search).get("demo") === "true";
+
+const isFreshWorkspaceMode = (): boolean =>
+  typeof window !== "undefined" &&
+  new URLSearchParams(window.location.search).get("fresh") === "true";
+
+const isPracticeTourMode = (): boolean =>
+  typeof window !== "undefined" &&
+  new URLSearchParams(window.location.search).get("tour") === "practice";
 
 const temporaryDemoStorage: Storage = {
   get length() {
@@ -63,7 +74,9 @@ const createEvent = (
   processCompliant: true,
 });
 
-const createSeededCase = (): GridCase => {
+const createSeededCase = (
+  caseType: GridCase["caseType"] = "SIMULATION"
+): GridCase => {
   const node = {
     ...DEMO_GRID_NODES[0],
     activeSymptomLogs: [...DEMO_GRID_NODES[0].activeSymptomLogs],
@@ -74,11 +87,12 @@ const createSeededCase = (): GridCase => {
   const operatorId = "OP-001";
 
   return {
-    caseId: "CASE-NORTH-04-DEMO",
+    caseId:
+      caseType === "DRILL" ? "CASE-PRACTICE-NORTH-04" : "CASE-NORTH-04-DEMO",
     createdAt: now,
     createdBy: operatorId,
     operatingArea: "North District",
-    caseType: "SIMULATION",
+    caseType,
     currentNode: node,
     relatedNodes: DEMO_GRID_NODES.slice(1).map((relatedNode) => relatedNode.nodeId),
     signals: [],
@@ -97,7 +111,10 @@ const createSeededCase = (): GridCase => {
   };
 };
 
-const initialCase = createSeededCase();
+const initialCase = createSeededCase(
+  isPracticeTourMode() ? "DRILL" : "SIMULATION"
+);
+const startWithEmptyWorkspace = isFreshWorkspaceMode();
 
 interface GridOSStore {
   cases: GridCase[];
@@ -167,8 +184,8 @@ const createSignalForCase = (gridCase: GridCase): GridSignal => {
 
 export const useGridOSStore = create<GridOSStore>()(
   persist((set) => ({
-  cases: [initialCase],
-  activeCase: initialCase,
+  cases: startWithEmptyWorkspace ? [] : [initialCase],
+  activeCase: startWithEmptyWorkspace ? null : initialCase,
   currentOperator: "OP-001",
 
   createCase: (operatingArea, caseType, node) => {
@@ -456,7 +473,7 @@ export const useGridOSStore = create<GridOSStore>()(
   },
   }),
   {
-    name: "grid-os-workspace-v1",
+    name: GRID_OS_STORAGE_KEY,
     storage: createJSONStorage(() =>
       isTemporaryDemoMode() ? temporaryDemoStorage : window.localStorage
     ),

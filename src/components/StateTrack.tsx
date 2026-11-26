@@ -4,6 +4,7 @@ import { GridState } from "../types/grid-os";
 interface StateTrackProps {
   currentState: GridState;
   completedStates: GridState[];
+  highlightedStage?: GridState;
 }
 
 const STAGES: GridState[] = [
@@ -21,6 +22,7 @@ const STAGES: GridState[] = [
 export const StateTrack: React.FC<StateTrackProps> = ({
   currentState,
   completedStates,
+  highlightedStage,
 }) => (
   <div className="state-track" aria-label="Nine-stage process progress">
     {STAGES.map((stage, index) => {
@@ -37,7 +39,9 @@ export const StateTrack: React.FC<StateTrackProps> = ({
       return (
         <React.Fragment key={stage}>
           <div
-            className={`stage-item ${stateClass} ${specialClass}`}
+            className={`stage-item ${stateClass} ${specialClass} ${
+              highlightedStage === stage ? "stage-tour-highlight" : ""
+            }`}
             aria-current={current ? "step" : undefined}
             title={stage === "AUTHORIZE" ? "Human decision required" : stage}
           >

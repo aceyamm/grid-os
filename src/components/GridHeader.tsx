@@ -9,6 +9,7 @@ interface GridHeaderProps {
   workspaceTitle?: string;
   processXp?: number;
   onGuide?: () => void;
+  onSwitchWorkspace?: () => void;
   killSwitch?: boolean;
   onKillSwitch?: () => void;
 }
@@ -22,6 +23,7 @@ export const GridHeader: React.FC<GridHeaderProps> = ({
   workspaceTitle = "OVERVIEW",
   processXp = 505,
   onGuide,
+  onSwitchWorkspace,
   killSwitch = false,
   onKillSwitch,
 }) => {
@@ -43,6 +45,11 @@ export const GridHeader: React.FC<GridHeaderProps> = ({
         <strong>{workspaceTitle}</strong>
         <span className={`case-mode case-mode-${caseType.toLowerCase()}`}>{caseType}</span>
       </div>
+      {onSwitchWorkspace && (
+        <button className="session-switch-button" onClick={onSwitchWorkspace}>
+          Workspace
+        </button>
+      )}
       <button className="guide-button" onClick={onGuide}>
         <span aria-hidden="true">i</span> Guide
       </button>
@@ -72,8 +79,11 @@ export const GridHeader: React.FC<GridHeaderProps> = ({
           aria-pressed={killSwitch}
           title={killSwitch ? "Clear global hold" : "Freeze pending review decisions"}
         >
-          <span aria-hidden="true" className="kill-switch-icon">{killSwitch ? "■" : "◇"}</span>
-          <span>{killSwitch ? "HOLD ACTIVE" : "GLOBAL HOLD"}</span>
+          <span aria-hidden="true" className="kill-switch-icon">{killSwitch ? "■" : "!"}</span>
+          <span className="kill-switch-copy">
+            <strong>{killSwitch ? "HOLD ACTIVE" : "KILL SWITCH"}</strong>
+            <small>{killSwitch ? "RELEASE GLOBAL HOLD" : "ENGAGE GLOBAL HOLD"}</small>
+          </span>
         </button>
       </div>
     </header>

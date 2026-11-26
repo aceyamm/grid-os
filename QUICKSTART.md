@@ -30,26 +30,31 @@ The application will open at **http://localhost:3000** automatically.
 ### Demo Scenario
 Grid OS ships with a seeded utility scenario demonstrating a realistic grid disturbance:
 
-1. The energy-focused **landing page** opens with the system guide. Choose **Enter dispatch terminal** in the guide or on the page to continue.
+1. The energy-focused **landing page** opens without a popup. Choose **Enter dispatch workspace** to enter; the system guide then opens inside the terminal.
 
-2. **Overview** loads immediately with:
+2. Open **Workspace Options** on the landing page to:
+   - Load temporary demo data without changing your saved workspace
+   - Return to the last saved workspace
+   - Start completely fresh after confirming replacement of saved cases
+
+3. **Overview** loads immediately with:
    - Substation North-4 (SUB-N04) in ELEVATED status
    - Current load exceeding capacity (overloaded)
    - Transformer thermal derating (-35% capacity)
    - Seeded, clearly labeled simulation telemetry
 
-3. **State Track** shows the 9-stage workflow:
+4. **State Track** shows the 9-stage workflow:
    - Sage markers: Completed stages
    - Gold highlight: Current stage
    - Dedicated human authorization stage
 
-4. **Node Telemetry** displays:
+5. **Node Telemetry** displays:
    - Current frequency (59.92 Hz — slightly low)
    - Capacity utilization (106% — overloaded)
    - Spinning reserves available (65 MW)
    - Active diagnostic logs with symptoms
 
-Use the left navigation to open the asset board, scan findings, review gate, Continuum history, and simulation preview. **Agents** provides timed or manual process playback, replay from SCAN through SIGNAL, and a live trace; playback always pauses at SIGNAL for dispatcher review. Standard mode stores the demo workspace in this browser. Add `?demo=true` for a temporary seeded preview that is not persisted.
+Use the left navigation to open the asset board, scan findings, review gate, Continuum history, and simulation preview. **Agents** provides timed or manual process playback, replay from SCAN through SIGNAL, and a live trace; playback always pauses at SIGNAL for dispatcher review. **Tours & Practice** offers a tab-by-tab guided tour, a timed demo agent run that highlights each tab, and a temporary nine-stage practice tour with a simulated dispatcher gate. Tours do not modify the saved workspace. Standard mode stores the workspace in this browser; `?demo=true` uses temporary, non-persisted demo data.
 
 ### Progress Through Workflow
 

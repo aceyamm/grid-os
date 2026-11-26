@@ -122,11 +122,13 @@ Grid OS uses **Zustand** for central state management with actions for:
 ✅ Seeded substation telemetry and field observations
 ✅ Human review decisions recorded in the Continuum trace
 ✅ Browser-persisted workspace by default; `?demo=true` opens a temporary seeded preview
+✅ Landing-page workspace selector for saved, temporary demo, and confirmed fresh sessions
 ✅ Recommendation-only interface with no equipment-control integration
 ✅ Responsive Kurogami terminal shell and audit exports
 ✅ Energy-focused landing page with the system guide shown on entry
 ✅ Agent Control timed/step playback with SIGNAL review pause and replay
 ✅ Landing-page Grid OS brief with prototype and integration boundaries clearly stated
+✅ Guided tab tour, timed highlighting demo agent, and isolated nine-stage practice tour
 
 🚀 Planned Features
 - Fault desk and incident intake

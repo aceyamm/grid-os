@@ -1,15 +1,37 @@
-import React from "react";
+import React, { useState } from "react";
+
+type SessionMode = "saved" | "demo" | "fresh";
 
 interface LandingPageProps {
   onEnter: () => void;
   onViewBrief: () => void;
+  onLoadDemo: () => void;
+  onReturnToSaved: () => void;
+  onStartFresh: () => void;
+  sessionMode: SessionMode;
+  sessionError: string;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
   onEnter,
   onViewBrief,
-}) => (
-  <main className="landing-page">
+  onLoadDemo,
+  onReturnToSaved,
+  onStartFresh,
+  sessionMode,
+  sessionError,
+}) => {
+  const [showSessionOptions, setShowSessionOptions] = useState(false);
+  const [confirmFresh, setConfirmFresh] = useState(false);
+
+  const sessionStatus = {
+    saved: "SAVED WORKSPACE READY",
+    demo: "TEMPORARY DEMO READY",
+    fresh: "EMPTY WORKSPACE READY",
+  }[sessionMode];
+
+  return (
+    <main className="landing-page">
     <header className="landing-header">
       <a className="landing-brand" href="#" onClick={(event) => event.preventDefault()}>
         <span className="landing-brand-mark">黒神</span>
@@ -20,7 +42,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       </a>
       <div className="landing-status">
         <span className="live-dot" />
-        SIMULATION TERMINAL READY
+        {sessionStatus}
       </div>
     </header>
 
@@ -47,7 +69,78 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <button className="landing-guide-button landing-brief-button" onClick={onViewBrief}>
             VIEW BRIEF
           </button>
+          <button
+            aria-controls="landing-session-options"
+            aria-expanded={showSessionOptions}
+            className="landing-guide-button"
+            onClick={() => {
+              setShowSessionOptions((open) => !open);
+              setConfirmFresh(false);
+            }}
+          >
+            WORKSPACE OPTIONS
+          </button>
         </div>
+        {showSessionOptions && (
+          <section className="landing-session-picker" id="landing-session-options">
+            <div className="landing-session-picker-heading">
+              <span className="eyebrow">CHOOSE WORKSPACE</span>
+              <button
+                className="icon-button"
+                aria-label="Close workspace options"
+                onClick={() => setShowSessionOptions(false)}
+              >
+                ×
+              </button>
+            </div>
+            <button
+              className="landing-session-option"
+              onClick={onLoadDemo}
+              aria-current={sessionMode === "demo" ? "true" : undefined}
+            >
+              <strong>Load demo data</strong>
+              <span>Your saved live session stays untouched. Demo data is temporary.</span>
+            </button>
+            <button
+              className="landing-session-option"
+              onClick={onReturnToSaved}
+              disabled={sessionMode === "saved"}
+              aria-current={sessionMode === "saved" ? "true" : undefined}
+            >
+              <strong>Return to last live session</strong>
+              <span>Restore the saved live workspace in this browser.</span>
+            </button>
+            {!confirmFresh ? (
+              <button
+                className="landing-session-option landing-session-option-danger"
+                onClick={() => setConfirmFresh(true)}
+              >
+                <strong>Start completely fresh</strong>
+                <span>Replace the saved live workspace with an empty one.</span>
+              </button>
+            ) : (
+              <div className="landing-fresh-confirm" role="alert">
+                <strong>Replace the saved workspace?</strong>
+                <p>This clears its saved cases from this browser and opens a blank workspace.</p>
+                <div>
+                  <button
+                    className="landing-guide-button"
+                    onClick={() => setConfirmFresh(false)}
+                  >
+                    KEEP SAVED DATA
+                  </button>
+                  <button
+                    className="landing-fresh-confirm-button"
+                    onClick={onStartFresh}
+                  >
+                    CONFIRM &amp; START FRESH
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+        {sessionError && <p className="landing-session-error" role="alert">{sessionError}</p>}
         <p className="landing-boundary">
           Grid OS monitors and recommends. No live SCADA/EMS or equipment control is connected.
         </p>
@@ -110,5 +203,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
       <span>PROCESS-GOVERNED ENERGY DISPATCH</span>
       <span>BUILT FOR REVIEW, NOT REMOTE CONTROL</span>
     </footer>
-  </main>
-);
+    </main>
+  );
+};
