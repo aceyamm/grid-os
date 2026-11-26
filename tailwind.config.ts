@@ -13,6 +13,8 @@ export default {
         cream: "#E8E9E3",
         "gray-green": "#89938E",
         gold: "#C4A664",
+        energy: "#56CBE8",
+        "energy-deep": "#07171B",
         emerald: "#10B981",
         amber: "#F59E0B",
         crimson: "#DC2626",

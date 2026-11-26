@@ -30,30 +30,36 @@ The application will open at **http://localhost:3000** automatically.
 ### Demo Scenario
 Grid OS ships with a seeded utility scenario demonstrating a realistic grid disturbance:
 
-1. **Overview Page** loads with:
+1. The energy-focused **landing page** opens with the system guide. Choose **Enter dispatch terminal** in the guide or on the page to continue.
+
+2. **Overview** loads immediately with:
    - Substation North-4 (SUB-N04) in ELEVATED status
    - Current load exceeding capacity (overloaded)
    - Transformer thermal derating (-35% capacity)
-   - Two active field diagnostic logs
+   - Seeded, clearly labeled simulation telemetry
 
-2. **State Track** shows the 9-stage workflow:
-   - Green checkmarks: Completed stages
+3. **State Track** shows the 9-stage workflow:
+   - Sage markers: Completed stages
    - Gold highlight: Current stage
-   - Red lock: Human authorization gate
+   - Dedicated human authorization stage
 
-3. **Node Telemetry** displays:
+4. **Node Telemetry** displays:
    - Current frequency (59.92 Hz — slightly low)
    - Capacity utilization (106% — overloaded)
    - Spinning reserves available (65 MW)
    - Active diagnostic logs with symptoms
 
+Use the left navigation to open the asset board, scan findings, review gate, Continuum history, and simulation preview. **Agents** provides timed or manual process playback, replay from SCAN through SIGNAL, and a live trace; playback always pauses at SIGNAL for dispatcher review. Standard mode stores the demo workspace in this browser. Add `?demo=true` for a temporary seeded preview that is not persisted.
+
 ### Progress Through Workflow
 
-1. **Click a stage** in the State Track
-2. **Enter a verification note** (required)
-3. **Click "Confirm & Advance"** to move to next stage
-4. Each transition is **audit-logged** in Continuum
-5. At **AUTHORIZE stage**, dispatcher must explicitly accept/reject
+1. Review the current stage and enter a verification note
+2. Select **Complete [stage]** to advance one stage
+3. Completing `RESERVE` creates a recommendation and opens the human review gate
+4. Enter a decision note and select **ACCEPT**, **REJECT**, or **HOLD AT STAGE**
+5. Every transition and decision is appended to the in-session Continuum history
+
+Grid OS records decisions only. It does not send commands to grid equipment. The simulation preview is synthetic and is not for operational use.
 
 ---
 

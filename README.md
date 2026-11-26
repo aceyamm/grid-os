@@ -51,19 +51,18 @@ SCAN → FAULT → LOAD_CAP → ISLAND → SEQUENCE → RESERVE
 
 ### Process Rules
 
-- Stages advance in order only when required evidence and checks are complete
-- Missing, stale, or unverified inputs block progression or trigger a documented hold
-- Material changes to inputs invalidate downstream assessments
-- Recommendations are separate from execution; authorization records a decision, not a command
-- Every transition records evidence, actor, timestamp, and audit trail
+- The seeded case advances one stage at a time and requires a verification note
+- Entering `SIGNAL` creates a recommendation packet and routes the case to the human review gate
+- `ACCEPT`, `REJECT`, and `HOLD` require a decision note and are recorded in Continuum
+- Recommendations and decisions are separate from execution; no equipment commands are sent
 
 ## 03 / Project Structure
 
 ```
 src/
 ├── types/           # TypeScript definitions (grid-os.ts)
-├── components/      # React components (StateTrack, NodeTelemetry, GridHeader)
-├── pages/          # Page components (OverviewPage)
+├── components/      # React components, including AgentControl and GridGuideModal
+├── pages/           # LandingPage and OverviewPage
 ├── store/          # Zustand state management (gridStore.ts)
 ├── data/           # Demo data and constants (demo.ts)
 ├── styles/         # Global styles (globals.css)
@@ -80,13 +79,14 @@ tsconfig.json       # TypeScript configuration
 
 ## 04 / Design System
 
-**Color Palette** (Kurogami Terminal Aesthetic)
+**Color Palette** (Kurogami Terminal Aesthetic with an energy-cyan system accent)
 - **Page Background:** `#050B0A` (ink)
 - **Card & Panels:** `#091310` (dark green-black)
 - **Borders:** `#20312B`
 - **Primary Text:** `#E8E9E3` (cream)
 - **Secondary Text:** `#89938E` (muted gray-green)
-- **Accent:** `#C4A664` (restrained gold)
+- **Grid OS Accent & Focus:** `#56CBE8` (electric cyan)
+- **Kurogami Brand Accent:** `#C4A664` (restrained gold)
 - **Status Colors:** Emerald (nominal), Amber (warning), Crimson (critical)
 
 **Typography**
@@ -96,14 +96,17 @@ tsconfig.json       # TypeScript configuration
 
 ## 05 / Key Components
 
+### Application shell
+The persistent left rail opens Overview, Substations & Feeders, Scenarios, Agents, Scan, Review Gate, Continuum, and Simulation Bank. The governance bar shows UTC time, frequency, VEIL capacity, operator clearance, and the global hold control.
+
 ### StateTrack
-Displays the nine-stage deterministic workflow with current progress and human gate indication.
+Displays the nine-stage workflow, completed stages, the current stage, and the human authorization boundary.
 
-### NodeTelemetry
-Shows current grid node status including frequency, capacity utilization, spinning reserves, and active diagnostic logs.
+### Review Gate and Continuum
+Review Gate presents the recommendation, linked evidence, and required decision rationale. Continuum shows the case event history and exports a JSON archive.
 
-### GridHeader
-Top navigation bar with system status, operator info, UTC time, grid frequency, and VEIL switching limits.
+### Simulation Bank
+Runs a deterministic, synthetic 1,000-sample preview and exports a text summary. Results are labeled illustrative and are not for operational use.
 
 ## 06 / State Management
 
@@ -115,14 +118,14 @@ Grid OS uses **Zustand** for central state management with actions for:
 
 ## 07 / Features (MVP)
 
-✅ Deterministic 9-stage workflow enforcement  
-✅ Grid node telemetry and capacity monitoring  
-✅ Manual state progression with verification notes  
-✅ Immutable continuum audit trail  
-✅ Demo seeded utility scenario (`?demo=true`)  
-✅ Kurogami terminal aesthetic  
-✅ Type-safe TypeScript codebase  
-✅ Responsive Tailwind CSS layout  
+✅ Sequential 9-stage review workflow with required notes
+✅ Seeded substation telemetry and field observations
+✅ Human review decisions recorded in the Continuum trace
+✅ Browser-persisted workspace by default; `?demo=true` opens a temporary seeded preview
+✅ Recommendation-only interface with no equipment-control integration
+✅ Responsive Kurogami terminal shell and audit exports
+✅ Energy-focused landing page with the system guide shown on entry
+✅ Agent Control timed/step playback with SIGNAL review pause and replay
 
 🚀 Planned Features
 - Fault desk and incident intake

@@ -1,90 +1,81 @@
-/**
- * Grid Header Component
- * Top navigation bar with system status and operator info
- */
-
-import React from "react";
-import { GridCase } from "../types/grid-os";
+import React, { useEffect, useState } from "react";
 
 interface GridHeaderProps {
   caseType?: "LIVE" | "SIMULATION" | "DRILL";
   operatorName?: string;
-  systemClock?: string;
   gridFrequency?: number;
   veilOpenCount?: number;
   veilLimit?: number;
+  workspaceTitle?: string;
+  processXp?: number;
+  onGuide?: () => void;
+  killSwitch?: boolean;
+  onKillSwitch?: () => void;
 }
 
 export const GridHeader: React.FC<GridHeaderProps> = ({
   caseType = "SIMULATION",
-  operatorName = "Operator",
-  systemClock,
-  gridFrequency = 60.0,
+  operatorName = "DISPATCH LVL 3",
+  gridFrequency = 60,
   veilOpenCount = 0,
   veilLimit = 2,
+  workspaceTitle = "OVERVIEW",
+  processXp = 505,
+  onGuide,
+  killSwitch = false,
+  onKillSwitch,
 }) => {
-  const now = new Date();
-  const utcTime = systemClock || now.toUTCString().split(" ")[4];
+  const [now, setNow] = useState(() => new Date());
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const utcTime = now.toISOString().slice(11, 19);
+  const frequencyTone =
+    gridFrequency < 59.9 ? "critical" : gridFrequency > 60.1 ? "warning" : "nominal";
 
   return (
-    <div className="border-b border-border bg-ink px-4 py-3">
-      <div className="flex justify-between items-center">
-        {/* Left: Breadcrumb */}
-        <div className="flex items-center gap-4">
-          <div className="text-sm font-semibold text-cream">
-            GOS <span className="text-gray-green">/</span> GRID OS
-          </div>
-          <div className="text-xs uppercase tracking-widest text-gray-green">
-            Dispatch Terminal
-          </div>
-          {caseType === "SIMULATION" && (
-            <div className="px-2 py-1 bg-amber/10 border border-amber rounded text-xs text-amber font-semibold">
-              🎯 SIMULATION
-            </div>
-          )}
-          {caseType === "DRILL" && (
-            <div className="px-2 py-1 bg-blue-500/10 border border-blue-500 rounded text-xs text-blue-400 font-semibold">
-              📋 DRILL
-            </div>
-          )}
-        </div>
-
-        {/* Center: System Info */}
-        <div className="flex items-center gap-6 text-xs font-mono">
-          <div>
-            <div className="text-gray-green uppercase tracking-widest mb-1">UTC</div>
-            <div className="text-cream">{utcTime}</div>
-          </div>
-          <div className="border-l border-border h-6" />
-          <div>
-            <div className="text-gray-green uppercase tracking-widest mb-1">
-              Frequency
-            </div>
-            <div className={`${gridFrequency >= 59.9 && gridFrequency <= 60.1 ? "text-emerald" : gridFrequency < 59.9 ? "text-crimson" : "text-amber"}`}>
-              {gridFrequency.toFixed(2)} Hz
-            </div>
-          </div>
-        </div>
-
-        {/* Right: Operator & Controls */}
-        <div className="flex items-center gap-4 text-xs font-mono">
-          <div>
-            <div className="text-gray-green uppercase tracking-widest mb-1">
-              VEIL Limit
-            </div>
-            <div className={`${veilOpenCount >= veilLimit ? "text-crimson" : "text-cream"}`}>
-              {veilOpenCount} <span className="text-gray-green">/ {veilLimit}</span> OPEN
-            </div>
-          </div>
-          <div className="border-l border-border h-6" />
-          <div>
-            <div className="text-gray-green uppercase tracking-widest mb-1">
-              Operator
-            </div>
-            <div className="text-cream">{operatorName}</div>
-          </div>
-        </div>
+    <header className="governance-bar">
+      <div className="breadcrumb">
+        <span>GRID OS</span><span className="breadcrumb-divider">/</span>
+        <strong>{workspaceTitle}</strong>
+        <span className={`case-mode case-mode-${caseType.toLowerCase()}`}>{caseType}</span>
       </div>
-    </div>
+      <button className="guide-button" onClick={onGuide}>
+        <span aria-hidden="true">i</span> Guide
+      </button>
+      <div className="governance-metrics">
+        <div className="governance-item clock-item">
+          <span className="eyebrow">SYSTEM CLOCK</span>
+          <strong className="mono"><span className="live-dot" />{utcTime} UTC</strong>
+          <small className={`frequency-${frequencyTone}`}>{gridFrequency.toFixed(2)} Hz GRID</small>
+        </div>
+        <div className="governance-item veil-item">
+          <span className="eyebrow">VEIL · SWITCHING WINDOW</span>
+          <strong className={veilOpenCount >= veilLimit ? "text-critical" : ""}>
+            {veilOpenCount} <span>/ {veilLimit} OPEN</span>
+          </strong>
+        </div>
+        <div className="governance-item xp-item">
+          <span className="eyebrow">PROCESS XP</span>
+          <strong className="mono">✳ {processXp}</strong>
+        </div>
+        <div className="governance-item clearance-item">
+          <span className="eyebrow">OPERATOR</span>
+          <strong className="clearance-chip">{operatorName}</strong>
+        </div>
+        <button
+          className={`kill-switch ${killSwitch ? "kill-switch-active" : ""}`}
+          onClick={onKillSwitch}
+          aria-pressed={killSwitch}
+          title={killSwitch ? "Clear global hold" : "Freeze pending review decisions"}
+        >
+          <span aria-hidden="true" className="kill-switch-icon">{killSwitch ? "■" : "◇"}</span>
+          <span>{killSwitch ? "HOLD ACTIVE" : "GLOBAL HOLD"}</span>
+        </button>
+      </div>
+    </header>
   );
 };

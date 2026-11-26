@@ -1,154 +1,89 @@
-/**
- * Node Telemetry Component
- * Displays current grid node status and telemetry
- */
-
 import React from "react";
-import { MonitoredGridNode, GridSeverity } from "../types/grid-os";
+import { MonitoredGridNode } from "../types/grid-os";
 
 interface NodeTelemetryProps {
   node: MonitoredGridNode;
   isLive?: boolean;
 }
 
-const getSeverityColor = (severity: GridSeverity): string => {
-  switch (severity) {
-    case "NOMINAL":
-      return "text-emerald";
-    case "ELEVATED":
-      return "text-amber";
-    case "CRITICAL":
-    case "BLACK_START":
-      return "text-crimson";
-  }
-};
-
-const getSeverityBg = (severity: GridSeverity): string => {
-  switch (severity) {
-    case "NOMINAL":
-      return "bg-emerald/10 border-emerald";
-    case "ELEVATED":
-      return "bg-amber/10 border-amber";
-    case "CRITICAL":
-    case "BLACK_START":
-      return "bg-crimson/10 border-crimson";
-  }
-};
-
 export const NodeTelemetry: React.FC<NodeTelemetryProps> = ({
   node,
-  isLive = true,
+  isLive = false,
 }) => {
-  const capacityUtilization = (node.currentLoadMw / node.effectiveCapacityMw) * 100;
-  const isOverloaded = capacityUtilization > 100;
+  const utilization =
+    node.effectiveCapacityMw > 0
+      ? (node.currentLoadMw / node.effectiveCapacityMw) * 100
+      : 0;
+  const overloaded = utilization > 100;
+  const severityTone =
+    overloaded || node.severity === "CRITICAL"
+      ? "critical"
+      : node.severity === "ELEVATED"
+        ? "warning"
+        : "nominal";
 
   return (
-    <div className="border border-border rounded bg-dark-green-black p-4">
-      <div className="flex justify-between items-start mb-4">
+    <section className="panel telemetry-panel">
+      <div className="panel-heading">
         <div>
-          <div className="text-xs uppercase tracking-widest text-gray-green">
-            {node.type.replace(/_/g, " ")}
-          </div>
-          <h3 className="text-lg font-semibold text-cream mt-1">{node.code}</h3>
-          <p className="text-sm text-gray-green mt-1">{node.name}</p>
+          <div className="eyebrow">{node.type.replace(/_/g, " ")} / SELECTED NODE</div>
+          <h2>{node.code} <span className="telemetry-name">{node.name}</span></h2>
         </div>
-        <div className={`px-2 py-1 border rounded text-xs font-mono font-semibold ${getSeverityBg(node.severity)} ${getSeverityColor(node.severity)}`}>
-          {node.severity}
-        </div>
+        <span className={`status-badge status-${severityTone}`}>{node.severity}</span>
       </div>
-
       {!isLive && (
-        <div className="mb-3 px-2 py-1 bg-amber/10 border border-amber rounded text-xs text-amber font-semibold">
-          ⚠ SIMULATION DATA
-        </div>
+        <div className="telemetry-source">SIMULATION DATA · NOT CONNECTED TO LIVE TELEMETRY</div>
       )}
-
-      <div className="grid grid-cols-2 gap-4 mb-4">
-        <div>
-          <div className="text-xs uppercase tracking-widest text-gray-green">
-            Frequency
-          </div>
-          <div className={`text-lg font-mono font-bold mt-1 ${node.localFrequencyHz < 59.9 ? "text-crimson" : node.localFrequencyHz > 60.1 ? "text-amber" : "text-emerald"}`}>
-            {node.localFrequencyHz.toFixed(2)} Hz
-          </div>
+      <div className="telemetry-grid">
+        <div className="telemetry-cell">
+          <span className="eyebrow">LOCAL FREQUENCY</span>
+          <strong className={`frequency-${node.localFrequencyHz < 59.9 ? "warning" : "nominal"}`}>
+            {node.localFrequencyHz.toFixed(2)} <small>Hz</small>
+          </strong>
         </div>
-
-        <div>
-          <div className="text-xs uppercase tracking-widest text-gray-green">
-            Spinning Reserve
-          </div>
-          <div className="text-lg font-mono font-bold mt-1 text-cream">
-            {node.spinningReserveMw.toFixed(0)} MW
-          </div>
+        <div className="telemetry-cell">
+          <span className="eyebrow">SPINNING RESERVE</span>
+          <strong>{node.spinningReserveMw.toFixed(0)} <small>MW</small></strong>
         </div>
-
-        <div>
-          <div className="text-xs uppercase tracking-widest text-gray-green">
-            Capacity Utilization
+        <div className="telemetry-cell telemetry-capacity">
+          <div className="telemetry-capacity-head">
+            <span className="eyebrow">LOAD / EFFECTIVE CAPACITY</span>
+            <strong className={overloaded ? "text-critical" : ""}>
+              {node.currentLoadMw} / {node.effectiveCapacityMw} MW
+            </strong>
           </div>
-          <div className="mt-2">
-            <div className="flex items-baseline gap-2">
-              <div className={`text-sm font-mono font-bold ${isOverloaded ? "text-crimson" : "text-cream"}`}>
-                {capacityUtilization.toFixed(1)}%
-              </div>
-              <div className="text-xs text-gray-green">
-                {node.currentLoadMw.toFixed(0)} / {node.effectiveCapacityMw.toFixed(0)} MW
-              </div>
-            </div>
-            <div className="mt-2 w-full bg-ink rounded border border-border h-2 overflow-hidden">
-              <div
-                className={`h-full transition-all ${isOverloaded ? "bg-crimson" : node.severity === "ELEVATED" ? "bg-amber" : "bg-emerald"}`}
-                style={{ width: `${Math.min(capacityUtilization, 100)}%` }}
-              />
-            </div>
-            {isOverloaded && (
-              <div className="text-xs text-crimson font-semibold mt-1">
-                ⚠ OVERLOADED
-              </div>
-            )}
+          <div
+            className="capacity-track"
+            role="meter"
+            aria-label="Capacity utilization"
+            aria-valuemin={0}
+            aria-valuemax={150}
+            aria-valuenow={Math.min(150, Math.round(utilization))}
+          >
+            <span
+              className={`capacity-fill capacity-fill-${severityTone}`}
+              style={{ width: `${Math.min(utilization, 100)}%` }}
+            />
           </div>
-        </div>
-
-        <div>
-          <div className="text-xs uppercase tracking-widest text-gray-green">
-            Rated Capacity
-          </div>
-          <div className="text-sm font-mono text-cream mt-1">
-            {node.ratedCapacityMw} MW
-          </div>
-          <div className="text-xs text-gray-green mt-1">
-            {node.activeSymptomLogs.length > 0
-              ? `Effective: ${node.effectiveCapacityMw.toFixed(0)} MW (-${((1 - node.effectiveCapacityMw / node.ratedCapacityMw) * 100).toFixed(0)}%)`
-              : "No derating"}
-          </div>
+          <span className="capacity-detail">
+            {utilization.toFixed(1)}% utilization · rated {node.ratedCapacityMw} MW
+          </span>
         </div>
       </div>
-
       {node.activeSymptomLogs.length > 0 && (
-        <div className="border-t border-border pt-3 mt-3">
-          <div className="text-xs uppercase tracking-widest text-amber mb-2">
-            Active Diagnostic Logs
-          </div>
-          <div className="space-y-2">
-            {node.activeSymptomLogs.map((log) => (
-              <div
-                key={log.logId}
-                className="text-xs bg-amber/5 border border-amber rounded p-2"
-              >
-                <div className="text-amber font-semibold">{log.headline}</div>
-                <div className="text-gray-green mt-1">
-                  {log.symptoms.map((s, i) => (
-                    <div key={i}>• {s}</div>
-                  ))}
-                </div>
-                <div className="text-gray-green text-xs mt-1">
-                  Capacity haircut: -{log.capacityHaircutPct}%
-                </div>
+        <div className="telemetry-logs">
+          <span className="eyebrow">FIELD OBSERVATIONS</span>
+          {node.activeSymptomLogs.map((log) => (
+            <article className="telemetry-log" key={log.logId}>
+              <div>
+                <strong>{log.headline}</strong>
+                <span>{log.qcStatus.replace(/_/g, " ")} · −{log.capacityHaircutPct}% reported capacity haircut</span>
               </div>
-            ))}
-          </div>
+              <ul>{log.symptoms.map((symptom) => <li key={symptom}>{symptom}</li>)}</ul>
+            </article>
+          ))}
         </div>
       )}
-    </div>
+    </section>
   );
 };
