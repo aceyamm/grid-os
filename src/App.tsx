@@ -12,12 +12,12 @@ import "./styles/globals.css";
 
 function App() {
   const [entered, setEntered] = useState(false);
-  const [guideOpen, setGuideOpen] = useState(true);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [briefOpen, setBriefOpen] = useState(false);
 
   const enterTerminal = () => {
-    setGuideOpen(false);
     setEntered(true);
+    setGuideOpen(true);
   };
 
   return (
@@ -27,7 +27,6 @@ function App() {
       ) : (
         <LandingPage
           onEnter={enterTerminal}
-          onOpenGuide={() => setGuideOpen(true)}
           onViewBrief={() => setBriefOpen(true)}
         />
       )}

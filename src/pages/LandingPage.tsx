@@ -2,13 +2,11 @@ import React from "react";
 
 interface LandingPageProps {
   onEnter: () => void;
-  onOpenGuide: () => void;
   onViewBrief: () => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
   onEnter,
-  onOpenGuide,
   onViewBrief,
 }) => (
   <main className="landing-page">
@@ -45,9 +43,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         <div className="landing-actions">
           <button className="landing-enter-button" onClick={onEnter}>
             ENTER DISPATCH WORKSPACE <span aria-hidden="true">→</span>
-          </button>
-          <button className="landing-guide-button" onClick={onOpenGuide}>
-            SYSTEM GUIDE
           </button>
           <button className="landing-guide-button landing-brief-button" onClick={onViewBrief}>
             VIEW BRIEF
