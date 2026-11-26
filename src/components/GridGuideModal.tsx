@@ -2,6 +2,14 @@ import React from "react";
 import { GRID_STATE_SEQUENCE } from "../data/demo";
 import { GridState } from "../types/grid-os";
 
+const GUIDE_TABS = [
+  { id: "overview", number: "01", label: "OVERVIEW" },
+  { id: "workflow", number: "02", label: "OPERATOR WORKFLOW" },
+  { id: "governance", number: "03", label: "GOVERNANCE & TOOLS" },
+] as const;
+
+type GuideTab = (typeof GUIDE_TABS)[number]["id"];
+
 interface GridGuideModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -27,11 +35,36 @@ export const GridGuideModal: React.FC<GridGuideModalProps> = ({
   onClose,
   onEnter,
 }) => {
+  const [activeTab, setActiveTab] = React.useState<GuideTab>("overview");
+
   if (!isOpen) return null;
 
   const enterTerminal = () => {
     onClose();
     onEnter?.();
+  };
+
+  const handleTabKeyDown = (
+    event: React.KeyboardEvent<HTMLButtonElement>,
+    index: number
+  ) => {
+    let nextIndex = index;
+    if (event.key === "ArrowRight" || event.key === "ArrowDown") {
+      nextIndex = (index + 1) % GUIDE_TABS.length;
+    } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
+      nextIndex = (index - 1 + GUIDE_TABS.length) % GUIDE_TABS.length;
+    } else if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = GUIDE_TABS.length - 1;
+    } else {
+      return;
+    }
+
+    event.preventDefault();
+    const nextTab = GUIDE_TABS[nextIndex];
+    setActiveTab(nextTab.id);
+    document.getElementById(`guide-tab-${nextTab.id}`)?.focus();
   };
 
   return (
@@ -69,13 +102,33 @@ export const GridGuideModal: React.FC<GridGuideModalProps> = ({
           <p>Operator reference · process before position · recommendations are not control actions</p>
         </div>
 
-        <nav className="guide-index" aria-label="Guide contents">
-          <a href="#guide-overview">01 / OVERVIEW</a>
-          <a href="#guide-workflow">02 / OPERATOR WORKFLOW</a>
-          <a href="#guide-governance">03 / GOVERNANCE &amp; TOOLS</a>
-        </nav>
+        <div className="guide-index" role="tablist" aria-label="Guide sections">
+          {GUIDE_TABS.map((tab, index) => (
+            <button
+              aria-controls={`guide-${tab.id}`}
+              aria-selected={activeTab === tab.id}
+              id={`guide-tab-${tab.id}`}
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              onKeyDown={(event) => handleTabKeyDown(event, index)}
+              role="tab"
+              tabIndex={activeTab === tab.id ? 0 : -1}
+              type="button"
+            >
+              <span>{tab.number}</span>
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-        <section className="guide-section" id="guide-overview">
+        <section
+          aria-labelledby="guide-tab-overview"
+          className="guide-section"
+          id="guide-overview"
+          role="tabpanel"
+          tabIndex={0}
+          hidden={activeTab !== "overview"}
+        >
           <div className="guide-section-title"><span>01</span><h3>OVERVIEW</h3></div>
           <p>
             Grid OS is a deterministic substation load-shedding and black-start
@@ -98,7 +151,14 @@ export const GridGuideModal: React.FC<GridGuideModalProps> = ({
           </div>
         </section>
 
-        <section className="guide-section" id="guide-workflow">
+        <section
+          aria-labelledby="guide-tab-workflow"
+          className="guide-section"
+          id="guide-workflow"
+          role="tabpanel"
+          tabIndex={0}
+          hidden={activeTab !== "workflow"}
+        >
           <div className="guide-section-title"><span>02</span><h3>OPERATOR WORKFLOW</h3></div>
           <ol className="guide-workflow-list">
             <li><span>01</span><div><strong>Review substations &amp; feeders</strong><p>Inspect seeded ratings, reserve figures, and available FieldForge logs on the asset board.</p></div></li>
@@ -118,7 +178,14 @@ export const GridGuideModal: React.FC<GridGuideModalProps> = ({
           </ol>
         </section>
 
-        <section className="guide-section" id="guide-governance">
+        <section
+          aria-labelledby="guide-tab-governance"
+          className="guide-section"
+          id="guide-governance"
+          role="tabpanel"
+          tabIndex={0}
+          hidden={activeTab !== "governance"}
+        >
           <div className="guide-section-title"><span>03</span><h3>GOVERNANCE &amp; TOOLS</h3></div>
           <div className="guide-tool-grid">
             <article><strong>VEIL</strong><p>Displays the concurrent switching window and its configured limit.</p></article>

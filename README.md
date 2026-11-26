@@ -126,6 +126,7 @@ Grid OS uses **Zustand** for central state management with actions for:
 ✅ Responsive Kurogami terminal shell and audit exports
 ✅ Energy-focused landing page with the system guide shown on entry
 ✅ Agent Control timed/step playback with SIGNAL review pause and replay
+✅ Landing-page Grid OS brief with prototype and integration boundaries clearly stated
 
 🚀 Planned Features
 - Fault desk and incident intake

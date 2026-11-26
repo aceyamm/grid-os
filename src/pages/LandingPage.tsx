@@ -3,11 +3,13 @@ import React from "react";
 interface LandingPageProps {
   onEnter: () => void;
   onOpenGuide: () => void;
+  onViewBrief: () => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({
   onEnter,
   onOpenGuide,
+  onViewBrief,
 }) => (
   <main className="landing-page">
     <header className="landing-header">
@@ -42,10 +44,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
         </p>
         <div className="landing-actions">
           <button className="landing-enter-button" onClick={onEnter}>
-            ENTER DISPATCH TERMINAL <span aria-hidden="true">→</span>
+            ENTER DISPATCH WORKSPACE <span aria-hidden="true">→</span>
           </button>
           <button className="landing-guide-button" onClick={onOpenGuide}>
-            OPEN SYSTEM GUIDE
+            SYSTEM GUIDE
+          </button>
+          <button className="landing-guide-button landing-brief-button" onClick={onViewBrief}>
+            VIEW BRIEF
           </button>
         </div>
         <p className="landing-boundary">
@@ -72,6 +77,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({
           <path className="schematic-line" d="M261 76V224" />
           <path className="schematic-line schematic-flow" d="M66 142H183L261 76H396" />
           <circle className="schematic-node schematic-node-warning" cx="66" cy="142" r="8" />
+          <circle className="schematic-orbit-node" cx="66" cy="142" r="4">
+            <animateMotion
+              dur="8s"
+              path="M0 0H117L195 -66H330H195L117 0H0"
+              repeatCount="indefinite"
+            />
+          </circle>
           <circle className="schematic-node" cx="183" cy="142" r="6" />
           <circle className="schematic-node" cx="261" cy="76" r="6" />
           <circle className="schematic-node schematic-node-storage" cx="261" cy="224" r="7" />

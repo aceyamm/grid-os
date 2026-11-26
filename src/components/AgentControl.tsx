@@ -59,13 +59,8 @@ export const AgentControl: React.FC<AgentControlProps> = ({ onOpenReview }) => {
     (signal) => signal.status === "PENDING_DISPATCHER"
   );
   const pausedAtSignal = currentState === "SIGNAL" && Boolean(pendingSignal);
-  const agentEvents = selectedCase
+  const continuumEvents = selectedCase
     ? [...selectedCase.continuumEvents]
-        .filter(
-          (event) =>
-            event.actorType === "AGENT" ||
-            event.evidenceNote.startsWith("Agent replay initialized")
-        )
         .reverse()
         .slice(0, 5)
     : [];
@@ -322,12 +317,12 @@ export const AgentControl: React.FC<AgentControlProps> = ({ onOpenReview }) => {
 
           <section className="panel agent-continuum-panel">
             <div className="panel-heading">
-              <div><div className="eyebrow">CONTINUUM UPDATES</div><h2>Agent event trace</h2></div>
-              <span className="eyebrow">MOST RECENT FIRST</span>
+              <div><div className="eyebrow">CONTINUUM UPDATES</div><h2>Latest case events</h2></div>
+              <span className="eyebrow">MOST RECENT · UTC</span>
             </div>
-            {agentEvents.length ? (
+            {continuumEvents.length ? (
               <div className="agent-events">
-                {agentEvents.map((event) => (
+                {continuumEvents.map((event) => (
                   <article className="agent-event" key={event.eventId}>
                     <div className="agent-event-topline">
                       <span>{event.actorType} · {event.actorId}</span>
@@ -339,7 +334,7 @@ export const AgentControl: React.FC<AgentControlProps> = ({ onOpenReview }) => {
                 ))}
               </div>
             ) : (
-              <div className="agent-events-empty">No agent events yet. Run or step the simulation to begin a trace.</div>
+              <div className="agent-events-empty">No Continuum events are recorded for this case yet.</div>
             )}
           </section>
           <div className="agent-disclaimer">Recommendations are process outputs under review. Human authorization is required. This is not an emergency response system of record.</div>
