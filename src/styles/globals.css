@@ -1,0 +1,62 @@
+/**
+ * Grid OS Global Styles
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-ink text-cream;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold;
+  }
+
+  input, textarea, select {
+    @apply bg-ink text-cream border border-border rounded px-3 py-2;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    @apply outline-none border-gold;
+  }
+
+  button {
+    @apply transition-all;
+  }
+
+  button:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+}
+
+@layer components {
+  .state-badge {
+    @apply px-2 py-1 border rounded text-xs font-mono font-semibold;
+  }
+
+  .status-nominal {
+    @apply bg-emerald/20 border-emerald text-emerald;
+  }
+
+  .status-elevated {
+    @apply bg-amber/20 border-amber text-amber;
+  }
+
+  .status-critical {
+    @apply bg-crimson/20 border-crimson text-crimson;
+  }
+
+  .telemetry-label {
+    @apply text-xs uppercase tracking-widest text-gray-green;
+  }
+
+  .telemetry-value {
+    @apply text-lg font-mono font-bold text-cream mt-1;
+  }
+}
+
+
